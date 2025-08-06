@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../../common/css/reset.css" />
+    <link rel="stylesheet" href="../../common/css/base.css" />
+    <link rel="stylesheet" href="./css/style.css" />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <div class="wrapper" id="wrapper">
+      <button type="button" class="btn search-btn" id="pokemon_search">ポケモンを探す</button>
+    </div>
+    <script src="../../common/js/jquery.js"></script>
+    <script>
+      // 回答はここに書いてね
+      $(function () {
+        const initialHtml = '<button type="button" class="btn search-btn" id="pokemon_search">ポケモンを探す</button>';
+
+        // 戻る、逃げるボタンを押した時に初期画面に戻る
+        $('#wrapper').on('click', '[data-js="reset"]', function () {
+          $('#wrapper').html(initialHtml);
+        });
+
+        $('#wrapper').on('click', '#pokemon_search', function () {
+          $.ajax({
+            url: 'https://pokeapi.co/api/v2/item/4/',
+            method: 'GET',
+          })
+            .done(function (res) {
+              console.log(res);
+              const pokemonBall = res.sprites.default;
+
+              $.ajax({
+                url: 'https://pokeapi.co/api/v2/pokemon/?limit=151',
+                method: 'GET',
+              })
+                .done(function (res) {
+                  console.log(res);
+                  // ポケモンのリストからランダムに1匹を選択
+                  const randomIndex = Math.floor(Math.random() * res.results.length);
+                  const selectedPokemonUrl = res.results[randomIndex].url;
+
+                  // 各ポケモンの詳細情報を取得
+                  $.ajax({
+                    url: selectedPokemonUrl,
+                    method: 'GET',
+                  })
+                    .done(function (res) {
+                      // 画像URL
+                      const pokemonImageUrl = res.sprites.front_default;
+                      const pokemonName = res.species.url;
+
+                      // ポケモン名の日本語を取得
+                      $.ajax({
+                        url: pokemonName,
+                        method: 'GET',
+                      })
+                        .done(function (res) {
+                          // 日本語名
+                          const pokemonJapaneseName = res.names[0].name;
+
+                          // 「ポケモンを探す」後の画面表示
+                          let encountHtml = `
+                    <p class="name">${pokemonJapaneseName}</p>
+                    <div>
+                      <img class="img" src="${pokemonImageUrl}" alt="">
+                    </div>
+                    <div>
+                      <button class="btn" id="catch">捕まえる</button>
+                      <button class="btn" data-js="reset">逃げる</button>
+                    </div>
+                  `;
+
+                          // 「捕まえる」成功時の画面表示
+                          let doneHtml = `
+                    <p class="name">ゲットしました</p>
+                    <div>
+                      <img class="img" src="${pokemonBall}" alt="">
+                    </div>
+                    <button class="btn" data-js="reset">戻る</button>
+                  `;
+
+                          // // 「捕まえる」失敗時の画面表示
+                          let failHtml = `
+                    <p class="text">逃げられてしまった...</p>
+                    <button class="btn mt" data-js="reset">戻る</button>
+                    `;
+
+                          $('#wrapper').html(encountHtml);
+
+                          $('#wrapper')
+                            .off('click', '#catch')
+                            .on('click', '#catch', function () {
+                              const successRate = Math.random(); // 0から1の間の乱数
+                              if (successRate < 0.5) {
+                                // 捕獲成功
+                                $('#wrapper').html(doneHtml);
+                              } else {
+                                // 捕獲失敗
+                                $('#wrapper').html(failHtml);
+                              }
+                            });
+                        })
+                        .fail(function (err) {
+                          console.log(err);
+                        });
+                    })
+                    .fail(function (err) {
+                      console.log(err);
+                    });
+                })
+                .fail(function (err) {
+                  console.log(err);
+                });
+            })
+            .fail(function (err) {
+              console.log(err);
+            });
+        });
+      });
+    </script>
+  </body>
+</html>
